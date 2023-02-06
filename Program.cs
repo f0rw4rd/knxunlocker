@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -254,7 +255,7 @@ class KNXBruteForcer
                 rng.seed = state.Item2;
                 skip = state.Item1;
             }
-             for (uint i = 0; i <= uint.MaxValue; i++)
+            for (uint i = 0; i <= uint.MaxValue; i++)
             {
                 var key = rng.Next();
                 if (i % 100 == 0)
@@ -316,7 +317,7 @@ class KNXBruteForcer
             return;
         }
         // keys are based on same well known default keys and keys from real attacks
-        var key_space = new UInt32[] { 0x11223344, 0x12345678, 0x00000000, 0x87654321, 0x11111111, 0xffffffff, 0x42424242, 0x1235468, 0x24155165, 0x12354789, 0x47566566, 0x26516886, 0xC};
+        var key_space = new UInt32[] { 0x11223344, 0x12345678, 0x00000000, 0x87654321, 0x11111111, 0xffffffff, 0x42424242, 0x1235468, 0x24155165, 0x12354789, 0x47566566, 0x26516886, 0xC };
         foreach (var key in key_space)
         {
             tryKey(device, key);
@@ -326,8 +327,6 @@ class KNXBruteForcer
     }
     static void Main(string[] args)
     {
-
-
         var parserResult = Parser.Default.ParseArguments<CommandLineOptions>(args)
                .WithParsed<CommandLineOptions>(o =>
                {
@@ -350,16 +349,16 @@ class KNXBruteForcer
                            return;
                        }
 
-                   if (!o.TryAllKeys && !o.TryDefaultKeys && !o.TryDictionaryKeys)
-                   {
-                       Console.WriteLine("You should at least specify one burteforce option (try --help for more information)");
-                       return;
+                       if (!o.TryAllKeys && !o.TryDefaultKeys && !o.TryDictionaryKeys)
+                       {
+                           Console.WriteLine("You should at least specify one burteforce option (try --help for more information)");
+                           return;
+                       }
+
+                       brute.BruteForce(o);
                    }
 
-                   brute.BruteForce(o);
-                   }
-
-               });     
+               });
     }
 
     private void BruteForce(CommandLineOptions o)
@@ -402,12 +401,12 @@ class KNXBruteForcer
                 }
                 else
                 {
-                    if(o.TryDefaultKeys)
+                    if (o.TryDefaultKeys)
                         level1(device);
-                    if(o.TryDictionaryKeys)                    
+                    if (o.TryDictionaryKeys)
                         level2(device, o.Keyfile, o.MaxWorkes, o.NumberWorker);
-                    if(o.TryAllKeys)
-                        level3(device, o.MaxWorkes, o.NumberWorker);                                    
+                    if (o.TryAllKeys)
+                        level3(device, o.MaxWorkes, o.NumberWorker);
                 }
             }
         }
