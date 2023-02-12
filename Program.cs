@@ -3,15 +3,15 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using CommandLine;
+using CommandLine.Text;
 using Knx.Bus.Common;
 using Knx.Bus.Common.Configuration;
 using Knx.Bus.Common.Exceptions;
 using Knx.Bus.Common.KnxIp;
 using Knx.Falcon;
-
 using Knx.Falcon.Sdk;
-using knxunlock;
 using ShellProgressBar;
+using knxunlock;
 
 namespace knxunlock
 {
@@ -70,8 +70,6 @@ namespace knxunlock
 
         [Option(shortName: '3', longName: "allkeys", Required = false, HelpText = "Try the all keys", Default = false)]
         public bool TryAllKeys { get; set; }
-        [Option(shortName: '4', longName: "singlekey", Required = false, HelpText = "Try the default keys", Default = false)]
-        public bool TrySinglKey { get; set; }
 
         [Option(shortName: 'b', longName: "benchmark", Required = false, HelpText = "Test the speed of the recovery", Default = false)]
         public bool Benchmark { get; set; }
@@ -87,8 +85,10 @@ namespace knxunlock
 
         [Option(shortName: 'm', longName: "maxnumber", Required = false, HelpText = "Maximal number of bruteforces", Default = 1)]
         public int MaxWorkes { get; set; }
+
         [Option(shortName: 'i', longName: "worker", Required = false, HelpText = "Number of the bruteforcer", Default = 1)]
         public int NumberWorker { get; set; }
+
         [Option(shortName: 's', longName: "seed", Required = false, HelpText = "Seed to be used to iterate the whole key space", Default = 42)]
         public int seed { get; set; }
     }
@@ -241,9 +241,7 @@ class KNXBruteForcer
         }
     }
 
-    private void singleTry(Device device){
-        tryKey(device, 0x42424242);        
-    }
+
 
     private void level3(Device device, int maxWorkers, int numberWorker)
     {
@@ -329,36 +327,38 @@ class KNXBruteForcer
     {
 
 
-        Parser.Default.ParseArguments<CommandLineOptions>(args)
+        var parserResult = Parser.Default.ParseArguments<CommandLineOptions>(args)
                .WithParsed<CommandLineOptions>(o =>
                {
                    KNXBruteForcer brute = new KNXBruteForcer((uint)o.seed);
                    if (o.ListUsb)
                    {
                        brute.PrintUsbDevices();
+                       return;
                    }
                    else if (o.ListNetwork)
                    {
                        brute.NetworkDevices();
+                       return;
                    }
                    else
                    {
                        if (o.MaxWorkes > 1 && o.NumberWorker > o.MaxWorkes)
                        {
-                           Console.WriteLine("Worker number must be smaller maxworker");
+                           Console.WriteLine("Worker number must be smaller maxworker (try --help for more information)");
                            return;
                        }
 
                    if (!o.TryAllKeys && !o.TryDefaultKeys && !o.TryDictionaryKeys)
                    {
-                       Console.WriteLine("You should at least specify one burteforce option");
+                       Console.WriteLine("You should at least specify one burteforce option (try --help for more information)");
                        return;
                    }
 
-                       brute.BruteForce(o);
+                   brute.BruteForce(o);
                    }
 
-               });
+               });     
     }
 
     private void BruteForce(CommandLineOptions o)
@@ -401,10 +401,12 @@ class KNXBruteForcer
                 }
                 else
                 {
-                    level1(device);
-                    level2(device, o.Keyfile, o.MaxWorkes, o.NumberWorker);
-                    level3(device, o.MaxWorkes, o.NumberWorker);                
-                    //singleTry(device);
+                    if(o.TryDefaultKeys)
+                        level1(device);
+                    if(o.TryDictionaryKeys)                    
+                        level2(device, o.Keyfile, o.MaxWorkes, o.NumberWorker);
+                    if(o.TryAllKeys)
+                        level3(device, o.MaxWorkes, o.NumberWorker);                                    
                 }
             }
         }

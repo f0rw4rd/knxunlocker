@@ -10,7 +10,10 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishTrimmed>false</PublishTrimmed>    
     <DebugType>None</DebugType>
-    <DebugSymbols>False</DebugSymbols>
+    <DebugSymbols>False</DebugSymbols>    
+    <Company>f0rw4rd</Company>
+    <Version>1.0.0</Version>    
+    <AssemblyTitle>knxunlocker</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>
