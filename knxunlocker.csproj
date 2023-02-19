@@ -8,16 +8,14 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>    
     <PublishReadyToRun>true</PublishReadyToRun>
-    <PublishTrimmed>false</PublishTrimmed>    
-    <DebugType>None</DebugType>
-    <DebugSymbols>False</DebugSymbols>    
+    <PublishTrimmed>false</PublishTrimmed>        
     <Company>f0rw4rd</Company>
-    <Version>1.0.0</Version>    
+    <Version>1.0.1</Version>    
     <AssemblyTitle>knxunlocker</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.8.0" />
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />    
     <PackageReference Include="Knx.Falcon.Sdk" Version="5.7.565" />
     <PackageReference Include="ShellProgressBar" Version="5.1.0" />
     <PackageReference Include="System.IO.FileSystem" Version="4.3.0" />

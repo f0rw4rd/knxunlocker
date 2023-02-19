@@ -1,15 +1,11 @@
-﻿
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using CommandLine;
-using CommandLine.Text;
-using Knx.Bus.Common;
 using Knx.Bus.Common.Configuration;
 using Knx.Bus.Common.Exceptions;
 using Knx.Bus.Common.KnxIp;
-using Knx.Falcon;
 using Knx.Falcon.Sdk;
 using ShellProgressBar;
 using knxunlock;
@@ -60,22 +56,22 @@ namespace knxunlock
         [Option(shortName: 'U', longName: "usblist", Required = false, HelpText = "List all the connected and supported KNX USB devices", Default = false)]
         public bool ListUsb { get; set; }
 
-        [Option(shortName: 'N', longName: "networklist", Required = false, HelpText = "List all the discoverable KNX IP Gatways", Default = false)]
+        [Option(shortName: 'N', longName: "networklist", Required = false, HelpText = "List all the discoverable KNX IP Gateways", Default = false)]
         public bool ListNetwork { get; set; }
 
-        [Option(shortName: '1', longName: "defaultkeys", Required = false, HelpText = "Try the default keys", Default = false)]
+        [Option(longName: "defaultkeys", Required = false, HelpText = "Try the default keys", Default = false)]
         public bool TryDefaultKeys { get; set; }
 
-        [Option(shortName: '2', longName: "dictionaryKeys", Required = false, HelpText = "Try the dict keys", Default = false)]
+        [Option(longName: "dictionaryKeys", Required = false, HelpText = "Try the dict keys", Default = false)]
         public bool TryDictionaryKeys { get; set; }
 
-        [Option(shortName: '3', longName: "allkeys", Required = false, HelpText = "Try the all keys", Default = false)]
+        [Option(longName: "full", Required = false, HelpText = "Try the all keys", Default = false)]
         public bool TryAllKeys { get; set; }
 
         [Option(shortName: 'b', longName: "benchmark", Required = false, HelpText = "Test the speed of the recovery", Default = false)]
         public bool Benchmark { get; set; }
 
-        [Option(shortName: 'c', longName: "usb", Required = false, HelpText = "Connectionstring for the USB device or KNX GW to use")]
+        [Option(shortName: 'c', longName: "connection", Required = false, HelpText = "Connection string for KNX GW or USB device to use")]
         public String ConnectionString { get; set; }
 
         [Option(shortName: 't', longName: "target", Required = false, HelpText = "Address of the target")]
@@ -92,6 +88,9 @@ namespace knxunlock
 
         [Option(shortName: 's', longName: "seed", Required = false, HelpText = "Seed to be used to iterate the whole key space", Default = 42)]
         public int seed { get; set; }
+
+        [Option(shortName: 'p', longName: "discover", Required = false, HelpText = "Discover a knx device in programming mode", Default = false)]
+        public bool DiscoverKNXDevice { get; set; }
     }
 }
 class KNXBruteForcer
@@ -216,34 +215,6 @@ class KNXBruteForcer
         Console.WriteLine($"Tries per seconds {((float)max_keys / watch.ElapsedMilliseconds / 1000.0)}");
     }
 
-    private void level4(Device device, int maxWorkers, int numberWorker)
-    {
-        using (var pbar = new ProgressBar((int)(uint.MaxValue / 10), "Stage 4: Trying all keys", PROGRESS_OPTIONS))
-        {
-            uint skip = readProgress(4);
-            for (uint i = 0; i <= uint.MaxValue; i++)
-            {
-                var key = rng.Next();
-                if (i % 10 == 0)
-                    pbar.Tick($"Stage 4: Trying all keys: Tried {i} keys");
-
-                if (i <= skip)
-                    continue;
-
-                if (maxWorkers > 1 && i % maxWorkers != numberWorker)
-                    continue;
-
-                Console.WriteLine(key.ToString("x2"));
-                tryKey(device, key);
-                if (i % 100 == 0 && key > 0)
-                    saveProgress(4, key);
-            }
-            saveProgress(4, uint.MaxValue);
-        }
-    }
-
-
-
     private void level3(Device device, int maxWorkers, int numberWorker)
     {
         using (var pbar = new ProgressBar((int)(UInt32.MaxValue / 100), "Stage 3: Trying some keys", PROGRESS_OPTIONS))
@@ -259,15 +230,12 @@ class KNXBruteForcer
             {
                 var key = rng.Next();
                 if (i % 100 == 0)
-                    pbar.Tick($"Stage 3: Trying some keys: Tried {i} keys");
+                    pbar.Tick($"Stage 3: Trying all keys: Tried {i} keys");
 
                 if (i < skip)
                     continue;
 
                 if (maxWorkers > 1 && i % maxWorkers != numberWorker)
-                    continue;
-
-                if (!key.ToString("x2").All(char.IsDigit))
                     continue;
 
                 tryKey(device, key);
@@ -341,6 +309,9 @@ class KNXBruteForcer
                        brute.NetworkDevices();
                        return;
                    }
+                   else if(o.DiscoverKNXDevice){
+                        brute.DiscoverDevice(o);
+                   }
                    else
                    {
                        if (o.MaxWorkes > 1 && o.NumberWorker > o.MaxWorkes)
@@ -351,14 +322,40 @@ class KNXBruteForcer
 
                        if (!o.TryAllKeys && !o.TryDefaultKeys && !o.TryDictionaryKeys)
                        {
-                           Console.WriteLine("You should at least specify one burteforce option (try --help for more information)");
-                           return;
+                           o.TryDefaultKeys = true;  // try all methods as default
+                           o.TryAllKeys = true;
+                           o.TryDictionaryKeys = true;
                        }
 
                        brute.BruteForce(o);
                    }
 
                });
+    }
+
+
+    private void DiscoverDevice(CommandLineOptions o)
+    {
+        ConnectorParameters conParams = null;
+        if (o.ConnectionString != null)
+        {
+            conParams = ConnectorParameters.FromConnectionString(o.ConnectionString);
+        }
+
+        if (conParams == null)
+        {
+            Console.WriteLine("You must set a connection string either for a usb device or a KNX GW");
+            return;
+        }
+
+        using (Bus sut = new Bus(conParams))
+        {
+            Console.WriteLine("Connecting to KNX bus");
+            sut.Connect();
+        }
+
+        Console.WriteLine("KNX Device is not implemented yet!");
+
     }
 
     private void BruteForce(CommandLineOptions o)
@@ -377,7 +374,7 @@ class KNXBruteForcer
 
         if (conParams == null)
         {
-            Console.WriteLine("You must set a connectionstring either for a usb device or a KNX GW");
+            Console.WriteLine("You must set a connection string either for a usb device or a KNX GW");
             return;
         }
 
