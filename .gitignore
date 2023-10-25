@@ -1,0 +1,7 @@
+.vscode
+.vs
+bin
+*level*.txt
+obj
+*.code-workspace
+*.zip
