@@ -15,6 +15,8 @@ The bruteforcer supports three modes
 * level 2: tries a list of keys from all kind of wordlists (keys.txt) or a custom wordlist or your choice.
 * level 3: tries the whole key space (*with 10 tries per seconds, can take up to 13 years because the KNX bus is really slow*)
 
+If your KNX device shows the message "system hacked bcu key xx1234xx" (1234 is just an example) you can use the options --middle to generate a wordlist and use the option  *--dictionaryKeys* to use the wordlist.  
+See the following issue for an example of the message [Issue](https://github.com/f0rw4rd/knxunlocker/issues/2). 
 
 Some other features: 
 * The bruteforce stores the progress in a text file with to continue where it left off.  

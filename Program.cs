@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Text;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -67,6 +69,9 @@ namespace knxunlock
 
         [Option(longName: "full", Required = false, HelpText = "Try the all keys", Default = false)]
         public bool TryAllKeys { get; set; }
+
+        [Option(longName: "middle", Required = false, HelpText = "Generate key based on middle key (see https://github.com/f0rw4rd/knxunlocker/issues/2)", Default = false)]
+        public bool GenerateKeysFromMiddleKey { get; set; }
 
         [Option(shortName: 'b', longName: "benchmark", Required = false, HelpText = "Test the speed of the recovery", Default = false)]
         public bool Benchmark { get; set; }
@@ -193,6 +198,52 @@ class KNXBruteForcer
         if (value == PROGRESS_DONE)
             Console.WriteLine($"Stage {level}: Done. Tried all keys");
     }
+    // from https://stackoverflow.com/questions/223832/check-a-string-to-see-if-all-characters-are-hexadecimal-values
+    private bool IsHex(String chars)
+    {
+        bool isHex; 
+        foreach(var c in chars)
+        {
+            isHex = ((c >= '0' && c <= '9') || 
+                    (c >= 'a' && c <= 'f') || 
+                    (c >= 'A' && c <= 'F'));
+
+            if(!isHex)
+                return false;
+        }
+        return true;
+    }
+
+    private void generateKeyForHacked(){
+        Console.Write("Please enter the four middle hex digits of your key:");
+        var key_middle_part = Console.ReadLine();
+        // test if its hex and has the correct length
+        key_middle_part = key_middle_part.ToUpper();
+        if(key_middle_part.Count() != 4){
+            Console.WriteLine("Middle key does need to be four chars long!");
+            return;
+        }
+
+        if(!IsHex(key_middle_part)){
+            Console.WriteLine("Middle key does not seem to be hex!");
+            return;
+        }
+
+        string filePath = "keys.txt";
+
+        StringBuilder csvContent = new StringBuilder();
+
+        for (int i = 0; i <= 0xFFFF; i++)
+        {            
+           string hexValue = i.ToString("X4");
+           csvContent.AppendLine($"{hexValue.Substring(0, 1)}{hexValue.Substring(1, 1)}{key_middle_part}{hexValue.Substring(2, 1)}{hexValue.Substring(3, 1)}");
+        }
+        
+        File.WriteAllText(filePath, csvContent.ToString());
+
+        Console.WriteLine($"Key file {filePath} was created!");
+
+    }
 
     private void benchmark(Device device)
     {
@@ -299,7 +350,11 @@ class KNXBruteForcer
                .WithParsed<CommandLineOptions>(o =>
                {
                    KNXBruteForcer brute = new KNXBruteForcer((uint)o.seed);
-                   if (o.ListUsb)
+                   if(o.GenerateKeysFromMiddleKey){
+                        brute.generateKeyForHacked();
+                        return;
+                   }
+                   else if (o.ListUsb)
                    {
                        brute.PrintUsbDevices();
                        return;
