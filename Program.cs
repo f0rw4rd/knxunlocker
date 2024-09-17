@@ -17,13 +17,18 @@ namespace knxunlock
 
     public class KNXKeyFoundException : Exception
     {
+
+	public uint Key { get; }
+	public byte Level { get; }
+
         public KNXKeyFoundException()
         {
         }
 
-        public KNXKeyFoundException(uint key, uint level)
-            : base($"Found key {key.ToString("x2")} for level {level}")
+        public KNXKeyFoundException(uint key, byte level)
         {
+		Key = key;
+		Level = level;
         }
 
         public KNXKeyFoundException(string message, Exception inner)
@@ -143,6 +148,11 @@ class KNXBruteForcer
                 Console.WriteLine(ex.ToString());
                 Thread.Sleep(1000);
             }
+	    catch (KNXKeyFoundException e)
+	    {
+	    	Console.WriteLine($"Key Found!\nThe Key for level {e.Level + 1} is {e.Key.ToString("x2")}!");
+		System.Environment.Exit(0); // Graceful exit of program
+	    }
         }
     }
 
@@ -335,7 +345,7 @@ class KNXBruteForcer
             Console.WriteLine("Already tried stage 1");
             return;
         }
-        // keys are based on same well known default keys and keys from real attacks
+        // keys are based on some well known default keys and keys from real attacks
         var key_space = new UInt32[] { 0x11223344, 0x12345678, 0x00000000, 0x87654321, 0x11111111, 0xffffffff, 0x42424242, 0x1235468, 0x24155165, 0x12354789, 0x47566566, 0x26516886, 0xC };
         foreach (var key in key_space)
         {
@@ -371,7 +381,7 @@ class KNXBruteForcer
                    {
                        if (o.MaxWorkes > 1 && o.NumberWorker > o.MaxWorkes)
                        {
-                           Console.WriteLine("Worker number must be smaller maxworker (try --help for more information)");
+                           Console.WriteLine("Worker number must be smaller than maxworker (try --help for more information)");
                            return;
                        }
 
