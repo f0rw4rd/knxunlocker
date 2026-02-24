@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.2.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            os_label: win
+          - rid: linux-x64
+            os_label: linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Publish
+        run: dotnet publish -c Release -r ${{ matrix.rid }} --self-contained
+
+      - name: Package
+        run: |
+          cd bin/Release/net6.0/${{ matrix.rid }}/publish
+          rm -f knxunlocker.pdb
+          zip -9 "$GITHUB_WORKSPACE/knxunlocker_${{ matrix.os_label }}_${{ inputs.tag }}.zip" *
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: knxunlocker_${{ matrix.os_label }}
+          path: knxunlocker_${{ matrix.os_label }}_${{ inputs.tag }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --title "${{ inputs.tag }}" \
+            --generate-notes \
+            artifacts/**/*.zip
